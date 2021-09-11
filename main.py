@@ -9,7 +9,7 @@ import librosa.display
 import soundfile as sf
 
 
-def specgram(filename):
+def plotting_spectogram(filename):
     sample_rate, samples = wav.read(filename)
     f, t, Zxx = signal.stft(samples, fs=sample_rate)
     plt.pcolormesh(t, f, np.abs(Zxx))
