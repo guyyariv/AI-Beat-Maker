@@ -21,28 +21,14 @@ def beat_tracking(filename):
     x, sr = librosa.load(filename)
     ipd.Audio(x, rate=sr)
     tempo, beat_times = librosa.beat.beat_track(x, sr=sr, start_bpm=60,
-                                                units='time')
-    print(tempo)
-    print(beat_times)
+                                                units='samples')
     plt.figure(figsize=(14, 5))
-    x = np.fft.fftshift(x)
-    parts = np.where(x > 0.9)
-    x = x[parts[0][0]:parts[0][1]]
-    librosa.display.waveplot(x, alpha=0.6)
+    x_ = x[beat_times[0]:beat_times[2]]
+    librosa.display.waveplot(x_, alpha=0.6)
     plt.show()
-    # plt.vlines(beat_times, -1, 1, color='r')
-    # plt.show()
-    # plt.ylim(-1, 1)
-    # plt.show()
-    beat_times_diff = np.diff(beat_times)
-    plt.figure(figsize=(14, 5))
-    plt.hist(beat_times_diff, bins=50, range=(0, 4))
-    plt.xlabel('Beat Length (seconds)')
-    plt.ylabel('Count')
-    plt.show()
-    x = np.fft.ifftshift(x)
+    x = np.fft.ifftshift(x_)
     sf.write('reports/new.wav', x, sr)
 
 
 if __name__ == '__main__':
-    beat_tracking('resources/test.wav')
+    beat_tracking('resources/file_example_WAV_10MG.wav')
