@@ -26,8 +26,7 @@ def beat_tracking(filename):
     x_ = x[beat_times[0]:beat_times[2]]
     librosa.display.waveplot(x_, alpha=0.6)
     plt.show()
-    x = np.fft.ifftshift(x_)
-    sf.write('reports/new.wav', x, sr)
+    sf.write('reports/new.wav', x_, sr)
 
 
 if __name__ == '__main__':
