@@ -18,6 +18,7 @@ sys.path.append('..')
 
 
 class OnsetDetection:
+
     def __calculate_local_energy_function(self, x, window):
         """
         Calculate local energy function
@@ -37,7 +38,7 @@ class OnsetDetection:
         """
         return np.log(1 + gamma * signal)
 
-    def __calculate_discrete_derivative(self, energy):
+    def __calculate_discrete_derivative(self, signal):
         """
         :param energy: local energy function
         :return: discrete derivative
@@ -68,7 +69,7 @@ class OnsetDetection:
         w = np.mod(value + 0.5, 1) - 0.5
         return w
 
-    def __energy_based_novelty(self, x, Fs=1, N=2048, H=128, gamma=10.0,
+    def energy_based_novelty(self, x, Fs=1, N=2048, H=128, gamma=10.0,
                                norm=True):
         """
         Compute energy-based novelty function
@@ -156,3 +157,31 @@ class OnsetDetection:
             if max_value > 0:
                 novelty_phase = novelty_phase / max_value
         return novelty_phase, Fs_feature
+
+    def complex_domain_novelty(self, x, Fs=1, N=1024, H=64, gamma=10.0, M=40, norm=True):
+        X = librosa.stft(x, n_fft=N, hop_length=H, win_length=N,
+                         window='hanning')
+        Fs_feature = Fs / H
+        mag = np.abs(X)
+        if gamma > 0:
+            mag = np.log(1 + gamma * mag)
+        phase = np.angle(X) / (2 * np.pi)
+        phase_diff = np.diff(phase, axis=1)
+        phase_diff = np.concatenate(
+            (phase_diff, np.zeros((phase.shape[0], 1))), axis=1)
+        X_hat = mag * np.exp(2 * np.pi * 1j * (phase + phase_diff))
+        X_prime = np.abs(X_hat - X)
+        X_plus = np.copy(X_prime)
+        for n in range(1, X.shape[0]):
+            idx = np.where(mag[n, :] < mag[n - 1, :])
+            X_plus[n, idx] = 0
+        novelty_complex = np.sum(X_plus, axis=0)
+        if M > 0:
+            local_average = self.__compute_local_average(novelty_complex, M)
+            novelty_complex = novelty_complex - local_average
+            novelty_complex[novelty_complex < 0] = 0
+        if norm:
+            max_value = np.max(novelty_complex)
+            if max_value > 0:
+                novelty_complex = novelty_complex / max_value
+        return novelty_complex, Fs_feature
