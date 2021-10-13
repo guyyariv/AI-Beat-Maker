@@ -100,7 +100,7 @@ class OnsetDetection:
                 novelty_energy = novelty_energy / max_value
         return novelty_energy, Fs_feature
 
-    def spectral_based_novelty(self, x, Fs=1, N=1024, H=256, gamma=100.0,
+    def spectral_based_novelty(self, x, Fs=1, N=1024, H=256, gamma=10.0,
                                M=10, norm=True, librosa_window='hanning'):
         """
         Compute spectral-based novelty function
