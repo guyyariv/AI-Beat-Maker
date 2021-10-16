@@ -18,26 +18,29 @@ from beat_tracking.onset_detection import OnsetDetection
 sys.path.append('..')
 
 
-def beat_tracking(onset_envelope, tempo_estimation=None):
+def beat_tracking(sec_duration, onset_envelope, tempo_estimation=None):
     if tempo_estimation == None:
         tempo_estimation = librosa.beat.tempo(onset_envelope=onset_envelope,
                                               aggregate=None)
-    if np.mean(tempo_estimation) * 2 > np.max(tempo_estimation) and \
-            np.mean(tempo_estimation) / 2 < np.min(tempo_estimation):
+    if tempo_estimation[np.insert(np.diff(tempo_estimation).astype(
+            np.bool), 0, True)].size < sec_duration / 4:
         return librosa.beat.beat_track(onset_envelope=onset_envelope,
-                                               start_bpm=np.mean(
-                                                   tempo_estimation),
-                                               units='samples')
+                                       units='time')
     else:
-        pulse = librosa.beat.plp(onset_envelope=onset_envelope,
-                                 tempo_max=np.max(tempo_estimation),
-                                 tempo_min=np.min(tempo_estimation))
+        pulse = librosa.beat.plp(onset_envelope=onset_envelope)
         beats_plp = np.flatnonzero(librosa.util.localmax(pulse))
-        beats = librosa.samples_like(pulse)
-        return np.mean(tempo_estimation), beats[beats_plp]
+        beats = librosa.times_like(pulse)
+        return tempo_estimation, beats[beats_plp]
+
 
 
 if __name__ == '__main__':
-    x, sr = librosa.load('resources/beach.wav')
-    onset_envelope = OnsetDetection().spectral_based_novelty(x, sr)
-    beat_tracking(onset_envelope)
+    x, sr = librosa.load('reports/keys-of-moon-white-petals.wav')
+    onset_detection = OnsetDetection()
+    onset_envelope, fs = onset_detection.spectral_based_novelty(x, sr, H=512,
+                                                                M=100,
+                                                                norm=False)
+    tempo, peaks_sec = beat_tracking(x.size / sr, onset_envelope)
+    # tempo, peaks_sec = librosa.beat.beat_track(x, sr, units='time')
+    x_peaks = librosa.clicks(peaks_sec, sr=sr, click_freq=1000, length=len(x))
+    sf.write('test_guy2.wav', x + x_peaks, sr)
