@@ -24,7 +24,10 @@ def beat_tracking(sec_duration, onset_envelope, tempo_estimation=None):
                                               aggregate=None)
     if tempo_estimation[np.insert(np.diff(tempo_estimation).astype(
             np.bool), 0, True)].size < sec_duration / 4:
-        return librosa.beat.beat_track(onset_envelope=onset_envelope,
+        (_, idx, counts) = np.unique(tempo_estimation, return_index=True, return_counts=True)
+        index = idx[np.argmax(counts)]
+        mode = tempo_estimation[index]
+        return librosa.beat.beat_track(onset_envelope=onset_envelope, bpm=mode,
                                        units='time')
     else:
         pulse = librosa.beat.plp(onset_envelope=onset_envelope)
