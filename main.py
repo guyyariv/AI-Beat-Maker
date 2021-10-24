@@ -73,7 +73,7 @@ if __name__ == '__main__':
                                                     peaks), np.hstack(
                                                     inner_peaks))),
                                                  "all peaks"]])
-    rearanged_slices = random_arrangement(slices, 1, 4)
+    rearanged_slices = random_arrangement(slices, 1, 3)
     shf_onset_env, shf_times, shf_peaks, shf_inner_peaks, shf_peak_vals, shf_slices, shf_tempo, shf_beats = beat_tracking_and_slice(
         rearanged_slices, samp_rate)
 
