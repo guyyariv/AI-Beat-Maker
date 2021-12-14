@@ -80,6 +80,14 @@ def save_with_clicks(rearanged_slices, samp_rate, shf_peaks, shf_inner_peaks, na
     sf.write('results/{}.wav'.format(name), y_beats, samp_rate)
 
 
+def add_clicks_and_save(audio, samp_rate, peaks, name, clicks=True):
+    click_times = np.zeros((len(audio),))
+    if clicks:
+        click_times = librosa.clicks(times=peaks, sr=samp_rate, length=len(audio))
+    y_beats = audio + click_times
+    sf.write('results/{}.wav'.format(name), y_beats, samp_rate)
+
+
 def shorten_sample(audio_path, start_time_in_s, end_time_in_s, new_name):
     audio_data, sm_rate = librosa.load(audio_path)
     nw_sample = audio_data[(start_time_in_s * sm_rate):(end_time_in_s * sm_rate)]
