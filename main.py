@@ -1,9 +1,11 @@
+import librosa
 import numpy as np
 import random
-
+from matplotlib import pyplot as plt
 import pr
 import utils
 from beat_tracking import beat_tracking_algorithm
+from novelty_detection import novelty_detection_algorithm
 
 
 def random_arrangement(sliced_audio, initial_slices_num=4):
@@ -30,10 +32,37 @@ def random_arrangement(sliced_audio, initial_slices_num=4):
     return rearranged
 
 
+def novelty_detection(audio_data, samp_rate, N=4096, H=1024):
+    # Chroma Feature Sequence
+    chromagram = librosa.feature.chroma_stft(y=audio_data, sr=samp_rate, tuning=0, norm=2, hop_length=H, n_fft=N)
+
+    # Chroma Feature Sequence and SSM (10 Hz)
+    L, H = 1, 1
+    X, Fs_feature = novelty_detection_algorithm.smooth_downsample_feature_sequence(chromagram, samp_rate,
+                                                                 filt_len=L, down_sampling=H)
+    X = novelty_detection_algorithm.normalize_feature_sequence(X, norm='2', threshold=0.001)
+    # SSM = novelty_detection_algorithm.compute_sm_dot(X, X)
+    tempo_rel_min = 0.66
+    tempo_rel_max = 1.5
+    num = 5
+    shift_set = np.array(range(12))
+    tempo_rel_set = novelty_detection_algorithm.compute_tempo_rel_set(tempo_rel_min=tempo_rel_min, tempo_rel_max=tempo_rel_max, num=num)
+    S, I = novelty_detection_algorithm.compute_sm_ti(X, X, L=L, tempo_rel_set=tempo_rel_set, shift_set=shift_set, direction=2)
+
+    # S = novelty_detection_algorithm.threshold_matrix(S, thresh=[0.2,0.2], strategy='local')
+    SSM_norm = novelty_detection_algorithm.normalization_properties_ssm(S)
+    Ls = [40]
+    for L in Ls:
+        novelty_function = novelty_detection_algorithm.compute_novelty_ssm(SSM_norm, L=L)
+        plt.plot(novelty_function)
+        plt.show()
+
+
 if __name__ == "__main__":
     track_name = "30_sec_test"
     audio_path = "samples/{}.wav".format(track_name)
     audio_data, samp_rate = utils.get_wav_data(audio_path)
+    novelty_detection(audio_data, samp_rate)
     tempo_estimated, beat_slices = beat_tracking_algorithm.slice_by_beat_tracking(audio_data, samp_rate)
     rearanged_slices = random_arrangement(beat_slices, initial_slices_num=4)
     peaks = beat_tracking_algorithm.plp(rearanged_slices, samp_rate, tempo_min=tempo_estimated-5, tempo_max=tempo_estimated+5)
