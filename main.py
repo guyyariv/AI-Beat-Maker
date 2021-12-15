@@ -8,7 +8,27 @@ from beat_tracking import beat_tracking_algorithm
 from novelty_detection import novelty_detection_algorithm
 
 
-def random_arrangement(sliced_audio, initial_slices_num=4):
+def random_arrangement(sliced_audio, min_mult, max_mult, initial_slices_num=4):
+    """
+    This function will arrange the sliced sections randomly.
+    """
+    rearranged = np.array([])
+    for i in range(initial_slices_num):
+        rearranged = np.append(rearranged, sliced_audio[i])
+
+    # shuffle slices
+    random.shuffle(sliced_audio)
+
+    # repeat and remix
+    rnd_int = np.random.randint(min_mult, max_mult, size=int(len(sliced_audio) * 3 / 4))
+    for slice, rnd in zip(sliced_audio, rnd_int):
+        repeat = np.tile(slice, rnd)
+        rearranged = np.append(rearranged, repeat)
+
+    return rearranged
+
+
+def random_arrangement_other(sliced_audio, initial_slices_num=4):
     """
     This function will arrange the sliced sections randomly.
     """
@@ -64,8 +84,9 @@ if __name__ == "__main__":
     audio_data, samp_rate = utils.get_wav_data(audio_path)
     novelty_detection(audio_data, samp_rate)
     tempo_estimated, beat_slices = beat_tracking_algorithm.slice_by_beat_tracking(audio_data, samp_rate)
-    rearanged_slices = random_arrangement(beat_slices, initial_slices_num=4)
-    peaks = beat_tracking_algorithm.plp(rearanged_slices, samp_rate, tempo_min=tempo_estimated-5, tempo_max=tempo_estimated+5)
+    print(tempo_estimated)
+    rearanged_slices = random_arrangement(beat_slices, 1, 3)
+    tempo_estimated, peaks = beat_tracking_algorithm.beat_tracking(rearanged_slices, samp_rate, start_bpm=tempo_estimated)
     peaks_times = list()
     inner_peaks_times = list()
     for i in range(len(peaks)):
