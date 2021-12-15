@@ -30,7 +30,7 @@ def slice_by_beat_tracking(audio_data, sample_rate, onset_env=None, hop_length=5
     tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env, hop_length=hop_length, start_bpm=start_bpm)
     peaks = beats[::music_frame]
     peak_vals = (times[peaks] * sample_rate).astype(int)
-    slices = np.split(audio_data, peak_vals)
+    slices = np.split(audio_data, peak_vals)[:-1]
     return tempo, slices
 
 
