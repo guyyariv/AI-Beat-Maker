@@ -2,7 +2,6 @@ import librosa
 import numpy as np
 import random
 from matplotlib import pyplot as plt
-import pr
 import utils
 from beat_tracking import beat_tracking_algorithm
 from novelty_detection import novelty_detection_algorithm
@@ -85,7 +84,12 @@ if __name__ == "__main__":
     audio_path = "samples/{}.wav".format(track_name)
     audio_data, samp_rate = utils.get_wav_data(audio_path)
     novelty_detection(audio_data, samp_rate)
+
+    _, clicks_time = beat_tracking_algorithm.beat_tracking(audio_data, samp_rate)
+    utils.add_clicks_and_save(audio_data, samp_rate, clicks_time, "original_with_clicks_{}".format(track_name))
+
     tempo_estimated, beat_slices = beat_tracking_algorithm.slice_by_beat_tracking(audio_data, samp_rate)
+
     print(tempo_estimated)
     rearanged_slices = random_arrangement(beat_slices, total_time_sec=120, tempo_estimated=tempo_estimated)
     tempo_estimated, peaks = beat_tracking_algorithm.beat_tracking(rearanged_slices, samp_rate, start_bpm=tempo_estimated)

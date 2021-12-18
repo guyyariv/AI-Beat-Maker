@@ -7,9 +7,6 @@ import librosa
 import librosa.display
 import soundfile as sf
 from scipy.ndimage import filters
-import libfmp.b
-import libfmp.c2
-import libfmp.c6
 import utils
 import os, sys
 from scipy import signal
