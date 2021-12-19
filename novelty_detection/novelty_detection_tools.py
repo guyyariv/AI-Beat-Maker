@@ -472,3 +472,49 @@ def threshold_matrix(S, thresh, strategy='absolute', scale=False, penalty=0.0, b
         S_thresh[S_thresh > 0] = 1
         S_thresh[S_thresh < 0] = 0
     return S_thresh
+
+
+def compute_time_lag_representation(S, circular=True):
+    """Computation of (circular) time-lag representation
+
+    Notebook: C4/C4S4_StructureFeature.ipynb
+
+    Args:
+        S (np.ndarray): Self-similarity matrix
+        circular (bool): Computes circular version (Default value = True)
+
+    Returns:
+        L (np.ndarray): (Circular) time-lag representation of S
+    """
+    N = S.shape[0]
+    if circular:
+        L = np.zeros((N, N))
+        for n in range(N):
+            L[:, n] = np.roll(S[:, n], -n)
+    else:
+        L = np.zeros((2*N-1, N))
+        for n in range(N):
+            L[((N-1)-n):((2*N)-1-n), n] = S[:, n]
+    return L
+
+
+def novelty_structure_feature(L, padding=True):
+    """Computation of the novelty function from a circular time-lag representation
+
+    Notebook: C4/C4S4_StructureFeature.ipynb
+
+    Args:
+        L (np.ndarray): Circular time-lag representation
+        padding (bool): Padding the result with the value zero (Default value = True)
+
+    Returns:
+        nov (np.ndarray): Novelty function
+    """
+    N = L.shape[0]
+    if padding:
+        nov = np.zeros(N)
+    else:
+        nov = np.zeros(N-1)
+    for n in range(N-1):
+        nov[n] = np.linalg.norm(L[:, n+1] - L[:, n])
+    return nov

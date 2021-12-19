@@ -24,7 +24,6 @@ def beat_tracking(audio_data, sample_rate, onset_env=None, hop_length=512, start
 
 def slice_by_beat_tracking(audio_data, sample_rate, onset_env=None, hop_length=512, start_bpm=120.0, music_frame=4):
     if not onset_env:
-        audio_data = audio_data[np.where(audio_data > 0.01)[0][0]:]
         onset_env = librosa.onset.onset_strength(y=audio_data, sr=sample_rate, hop_length=hop_length)
     times = librosa.times_like(onset_env, sr=sample_rate)
     tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env, hop_length=hop_length, start_bpm=start_bpm)
