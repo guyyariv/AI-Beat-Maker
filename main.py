@@ -8,13 +8,13 @@ from novelty_detection import novelty_detection_tools
 from novelty_detection import novelty_detection
 
 
-def random_arrangement(sliced_audio, initial_slices_num=4, total_time_sec=120, tempo_estimated=120):
+def slices_random_arrangement(sliced_audio, initial_slices_num=1, total_time_sec=120):
     """
     This function will arrange the sliced sections randomly.
     """
-    tempo_estimated = tempo_estimated / 60
-    total_slices = round(total_time_sec / tempo_estimated)
     rearranged = np.array([])
+    if not sliced_audio:
+        return sliced_audio
     for i in range(initial_slices_num):
         rearranged = np.append(rearranged, sliced_audio[i])
 
@@ -22,7 +22,7 @@ def random_arrangement(sliced_audio, initial_slices_num=4, total_time_sec=120, t
     random.shuffle(sliced_audio)
 
     # repeat and remix
-    rnd_int = np.random.randint(1, round((total_slices / len(sliced_audio)) * 2), size=len(sliced_audio))
+    rnd_int = np.random.randint(1, 2, size=max(round(3 * len(sliced_audio) / 4), 1))
     for slice, rnd in zip(sliced_audio, rnd_int):
         repeat = np.tile(slice, rnd)
         rearranged = np.append(rearranged, repeat)
@@ -30,28 +30,17 @@ def random_arrangement(sliced_audio, initial_slices_num=4, total_time_sec=120, t
     return rearranged
 
 
-def random_arrangement_other(sliced_audio, initial_slices_num=4):
+def random_arrangement(slices):
     """
-    This function will arrange the sliced sections randomly.
+    :param slices: list of np.arrays
+    :return: 1-d np.array
     """
+    random.shuffle(slices)
     rearranged = np.array([])
-    initial_slices = np.array([])
-    if len(sliced_audio) > initial_slices_num:
-        initial_slices = sliced_audio[:initial_slices_num]
-    # shuffle slices
-    # random.shuffle(sliced_audio)
-    # repeat and remix
-    rnd_int = np.random.randint(initial_slices_num, len(sliced_audio), size=initial_slices_num)
-    for slice in initial_slices:
+    for slice in slices:
         rearranged = np.append(rearranged, slice)
-    for _ in range(np.min(rnd_int)):
-        if _ % 2 == 0:
-            for slice in sliced_audio[np.min(rnd_int):np.max(rnd_int)]:
-                rearranged = np.append(rearranged, slice)
-        else:
-            for slice in sliced_audio[np.max(rnd_int):]:
-                rearranged = np.append(rearranged, slice)
     return rearranged
+
 
 
 def novelty_detection_other(audio_data, samp_rate, N=2048, H=512):
@@ -83,24 +72,25 @@ def novelty_detection_other(audio_data, samp_rate, N=2048, H=512):
 
 
 if __name__ == "__main__":
-    track_name = "30_sec_test"
+    track_name = "John Coltrane A Love Supreme"
     audio_path = "samples/{}.wav".format(track_name)
     audio_data, samp_rate = utils.get_wav_data(audio_path)
-    novelty_detection_slice = (novelty_detection.novelty_detection(audio_data, samp_rate) * samp_rate).astype(np.int32)
-    audio_data = audio_data[novelty_detection_slice[0]:novelty_detection_slice[1]]
+    audio_total_time = librosa.get_duration(audio_data)
+    novelty_slices = novelty_detection.slice_by_novelty_detection(audio_data, samp_rate, audio_total_time)
+    slices = list()
+    estimated_bpm = [120]
+    for slice in novelty_slices:
+        time_1, time_2 = (slice * samp_rate).astype(np.int32)
+        tempo, bt_slices = beat_tracking.slice_by_beat_tracking(audio_data[time_1:time_2], samp_rate, start_bpm=estimated_bpm[-1])
+        slices_ran = slices_random_arrangement(bt_slices, total_time_sec=audio_total_time/len(novelty_slices))
+        slices.append(slices_ran)
+        estimated_bpm.append(tempo)
 
-    # novelty_function = novelty_detection_other(audio_data, samp_rate)
-    # pulse = np.flatnonzero(librosa.util.localmax(novelty_function))
-    # times = librosa.times_like(audio_data, sr=samp_rate)
-
-    _, clicks_time = beat_tracking.beat_tracking(audio_data, samp_rate)
-    utils.add_clicks_and_save(audio_data, samp_rate, clicks_time, "original_with_clicks_{}".format(track_name))
-
-    tempo_estimated, beat_slices = beat_tracking.slice_by_beat_tracking(audio_data, samp_rate)
-
-    print(tempo_estimated)
-    rearanged_slices = random_arrangement(beat_slices, total_time_sec=40, tempo_estimated=tempo_estimated)
-    tempo_estimated, peaks = beat_tracking.beat_tracking(rearanged_slices, samp_rate, start_bpm=tempo_estimated)
+    rearanged_slices = random_arrangement(slices)
+    print(estimated_bpm)
+    estimated_bpm = np.mean(np.array(estimated_bpm))
+    print(estimated_bpm)
+    tempo_estimated, peaks = beat_tracking.beat_tracking(rearanged_slices, samp_rate)
     peaks_times = list()
     inner_peaks_times = list()
     for i in range(len(peaks)):
