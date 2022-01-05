@@ -6,17 +6,18 @@ import utils
 from beat_tracking import beat_tracking
 from novelty_detection import novelty_detection_tools
 from novelty_detection import novelty_detection
+import soundfile as sf
 
 
-def slices_random_arrangement(sliced_audio, initial_slices_num=1, total_time_sec=120):
+def slices_random_arrangement(sliced_audio, total_time_sec=None):
     """
     This function will arrange the sliced sections randomly.
     """
     rearranged = np.array([])
     if not sliced_audio:
         return sliced_audio
-    for i in range(initial_slices_num):
-        rearranged = np.append(rearranged, sliced_audio[i])
+    # for i in range(initial_slices_num):
+    #     rearranged = np.append(rearranged, sliced_audio[i])
 
     # shuffle slices
     random.shuffle(sliced_audio)
@@ -24,8 +25,8 @@ def slices_random_arrangement(sliced_audio, initial_slices_num=1, total_time_sec
     # repeat and remix
     rnd_int = np.random.randint(1, 2, size=max(round(3 * len(sliced_audio) / 4), 1))
     for slice, rnd in zip(sliced_audio, rnd_int):
-        repeat = np.tile(slice, rnd)
-        rearranged = np.append(rearranged, repeat)
+        # repeat = np.tile(slice, rnd)
+        rearranged = np.append(rearranged, slice)
 
     return rearranged
 
@@ -39,42 +40,41 @@ def random_arrangement(slices):
     rearranged = np.array([])
     for slice in slices:
         rearranged = np.append(rearranged, slice)
+        # rearranged = np.append(rearranged, np.random.choice(slices))
     return rearranged
 
 
+def interval_arrangement(slice, sr, frame_length=2):
+    _, beat_frames = librosa.beat.beat_track(y=slice, sr=sr)
+    beat_samples = librosa.frames_to_samples(beat_frames)
+    # if len(beat_samples) < frame_length:
+    #     frame_length = int(len(beat_samples) / 2)
+    inner_intervals = librosa.util.frame(beat_samples, frame_length=frame_length, hop_length=1).T
+    onset_env = librosa.onset.onset_strength(slice, sr=sr,
+                                             aggregate=np.median)
+    tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env,
+                                           sr=sr)
+    hop_length = 512
+    fig, ax = plt.subplots(nrows=2, sharex=True)
+    times = librosa.times_like(onset_env, sr=sr, hop_length=hop_length)
+    M = librosa.feature.melspectrogram(y=slice, sr=sr, hop_length=hop_length)
+    librosa.display.specshow(librosa.power_to_db(M, ref=np.max),
+                             y_axis='mel', x_axis='time', hop_length=hop_length,
+                             ax=ax[0])
+    ax[0].label_outer()
+    ax[0].set(title='Mel spectrogram')
+    ax[1].plot(times, librosa.util.normalize(onset_env),
+               label='Onset strength')
+    ax[1].vlines(times[beats], 0, 1, alpha=0.5, color='r',
+                 linestyle='--', label='Beats')
+    ax[1].legend()
+    plt.show()
+    return librosa.effects.remix(slice, inner_intervals[::-1], align_zeros=False)
 
-def novelty_detection_other(audio_data, samp_rate, N=2048, H=512):
-    # Chroma Feature Sequence
-    chromagram = librosa.feature.chroma_stft(y=audio_data, sr=samp_rate, tuning=0, norm=2, hop_length=H, n_fft=N)
-    # chromagram = librosa.feature.mfcc(y=audio_data, sr=samp_rate)
 
-    # Chroma Feature Sequence and SSM (10 Hz)
-    L, H = 1, 1
-    X, Fs_feature = novelty_detection_tools.smooth_downsample_feature_sequence(chromagram, samp_rate,
-                                                                               filt_len=L, down_sampling=H)
-    X = novelty_detection_tools.normalize_feature_sequence(X, norm='2', threshold=0.001)
-    # SSM = novelty_detection_algorithm.compute_sm_dot(X, X)
-    tempo_rel_min = 0.66
-    tempo_rel_max = 1.5
-    num = 5
-    shift_set = np.array(range(12))
-    tempo_rel_set = novelty_detection_tools.compute_tempo_rel_set(tempo_rel_min=tempo_rel_min, tempo_rel_max=tempo_rel_max, num=num)
-    S, I = novelty_detection_tools.compute_sm_ti(X, X, L=L, tempo_rel_set=tempo_rel_set, shift_set=shift_set, direction=2)
-
-    # S = novelty_detection_algorithm.threshold_matrix(S, thresh=[0.2,0.2], strategy='local')
-    SSM_norm = novelty_detection_tools.normalization_properties_ssm(S)
-    Ls = [40]
-    for L in Ls:
-        novelty_function = novelty_detection_tools.compute_novelty_ssm(SSM_norm, L=L)
-        plt.plot(novelty_function)
-        plt.show()
-        return novelty_function
-
-
-if __name__ == "__main__":
-    track_name = "John Coltrane A Love Supreme"
-    audio_path = "samples/{}.wav".format(track_name)
+def all_process(track_name, audio_path):
     audio_data, samp_rate = utils.get_wav_data(audio_path)
+    audio_data, index = librosa.effects.trim(audio_data)
     audio_total_time = librosa.get_duration(audio_data)
     novelty_slices = novelty_detection.slice_by_novelty_detection(audio_data, samp_rate, audio_total_time)
     slices = list()
@@ -88,18 +88,48 @@ if __name__ == "__main__":
 
     rearanged_slices = random_arrangement(slices)
     print(estimated_bpm)
-    estimated_bpm = np.mean(np.array(estimated_bpm))
+    estimated_bpm = np.argmax(np.bincount(estimated_bpm))
     print(estimated_bpm)
-    tempo_estimated, peaks = beat_tracking.beat_tracking(rearanged_slices, samp_rate)
-    peaks_times = list()
-    inner_peaks_times = list()
-    for i in range(len(peaks)):
-        if i % 4 == 0:
-            peaks_times.append(peaks[i])
-        else:
-            inner_peaks_times.append(peaks[i])
-    print("peaks_times = ", peaks_times)
-    print("inner_peaks_times = ", inner_peaks_times)
+    tempo_estimated, peaks = beat_tracking.beat_tracking(rearanged_slices, samp_rate, start_bpm=estimated_bpm)
+    inner_peaks = beat_tracking.plp(rearanged_slices, samp_rate)
+    peaks_frame = peaks
+    print("peaks_times = ", peaks_frame)
+    print("all_peaks_from_beat_tracking = ", peaks)
+    print("inner_peaks_times = ", inner_peaks)
 
-    utils.add_clicks_and_save(rearanged_slices, samp_rate, peaks, "{}".format(track_name), clicks=False)
-    utils.add_clicks_and_save(rearanged_slices, samp_rate, peaks, "clicks_{}".format(track_name), clicks=True)
+    utils.add_clicks_and_save(rearanged_slices, samp_rate, peaks_frame, inner_peaks, "{}".format(track_name), clicks=False)
+    utils.add_clicks_and_save(rearanged_slices, samp_rate, peaks_frame, inner_peaks, "clicks_{}".format(track_name), clicks=True)
+
+    return rearanged_slices, peaks_frame, peaks, inner_peaks
+
+
+def remix(audio_path):
+    audio_data, samp_rate = utils.get_wav_data(audio_path)
+    audio_data, index = librosa.effects.trim(audio_data)
+    tempo, beat_frames = librosa.beat.beat_track(y=audio_data, sr=samp_rate, hop_length=512)
+    beat_samples = librosa.frames_to_samples(beat_frames)
+    intervals = librosa.util.frame(beat_samples, frame_length=2, hop_length=1).T
+    y_out = librosa.effects.remix(audio_data, intervals[::-1])
+    return tempo, y_out, samp_rate
+
+
+if __name__ == "__main__":
+    # utils.shorten_sample('samples/Infected Mushroom - Becoming Insane.wav', 0, 25, 'Becoming_Insane')
+    track_name = "new_gipsy kings"
+    audio_path = "samples/{}.wav".format(track_name)
+    audio_data, samp_rate = utils.get_wav_data(audio_path)
+    audio_data, index = librosa.effects.trim(audio_data)
+    k = 8
+    intervals, bound_segs = novelty_detection.novelty_detection(audio_data, samp_rate, k)
+    output = list()
+    # res = zip(bound_segs, intervals)
+    # res = list(res)
+    # res = sorted(res, key=lambda x: x[0])
+    for interval in intervals:
+        try:
+            inner_arrangement = interval_arrangement(audio_data[np.int32(interval[0] * samp_rate):np.int32(interval[1] * samp_rate)], samp_rate)
+        except:
+            inner_arrangement = np.array([])
+        output.append(inner_arrangement)
+    output = random_arrangement(output)
+    sf.write('results/new_{}.wav'.format(track_name), output, samp_rate)
