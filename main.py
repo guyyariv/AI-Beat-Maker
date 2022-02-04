@@ -53,8 +53,7 @@ def remix(audio_path):
 
 
 if __name__ == "__main__":
-    # utils.shorten_sample('samples/Infected Mushroom - Becoming Insane.wav', 0, 25, 'Becoming_Insane')
-    track_name = "new_gipsy kings"
+    track_name = "beach"
     audio_path = "samples/{}.wav".format(track_name)
     audio_data, samp_rate = utils.get_wav_data(audio_path)
     audio_data, index = librosa.effects.trim(audio_data)

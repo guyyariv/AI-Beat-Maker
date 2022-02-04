@@ -38,7 +38,7 @@ def random_arrangement(slices):
     return rearranged
 
 
-def interval_arrangement(slice, sr, frame_length=2):
+def interval_arrangement(slice, sr, frame_length=8):
     _, beat_frames = librosa.beat.beat_track(y=slice, sr=sr)
     beat_samples = librosa.frames_to_samples(beat_frames)
 
