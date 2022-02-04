@@ -4,6 +4,8 @@ Guy Yariv, Tal Herman
 
 MVP presentation: https://drive.google.com/file/d/1JfIOwruiSnZc99hsY7ajaZd46w_U4hps/view?usp=sharing
 
+https://docs.google.com/presentation/d/1a2NpFeHoDHmqDTGrgYMqOPMRc8rGdMwonmm0CqXkicc/edit?usp=sharing
+
 
 Description:
 Using machine learning and DSP to automatically generate remixes\ beats out of given
