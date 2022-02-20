@@ -3,6 +3,7 @@ import numpy as np
 import utils
 from beat_tracking import beat_tracking
 from novelty_detection import novelty_detection
+from novelty_detection.novelty_detection import NoveltyDetection
 import soundfile as sf
 from rearrangement import random_rearrangement
 
@@ -53,12 +54,12 @@ def remix(audio_path):
 
 
 if __name__ == "__main__":
-    track_name = "beach"
+    track_name = "Gipsy Kings - Trista Pena"
     audio_path = "samples/{}.wav".format(track_name)
     audio_data, samp_rate = utils.get_wav_data(audio_path)
     audio_data, index = librosa.effects.trim(audio_data)
-    k = 8
-    intervals, bound_segs = novelty_detection.novelty_detection(audio_data, samp_rate, k)
+    k = 6
+    intervals, bound_segs = NoveltyDetection(audio_data, samp_rate, k).novelty_detection(show=True)
     output = list()
     # res = zip(bound_segs, intervals)
     # res = list(res)
