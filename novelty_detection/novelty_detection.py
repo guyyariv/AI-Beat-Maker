@@ -171,10 +171,9 @@ class NoveltyDetection:
         bound_times = librosa.frames_to_time(bound_frames)
         freqs = librosa.cqt_frequencies(n_bins=C.shape[0], fmin=librosa.note_to_hz('C1'),
                                         bins_per_octave=self.BINS_PER_OCTAVE)
-        if show:
-            fig, ax = plt.subplots()
-            librosa.display.specshow(C, y_axis='cqt_hz', sr=self.sr, bins_per_octave=self.BINS_PER_OCTAVE,
-                                     x_axis='time', ax=ax)
+        fig, ax = plt.subplots()
+        librosa.display.specshow(C, y_axis='cqt_hz', sr=self.sr, bins_per_octave=self.BINS_PER_OCTAVE,
+                                 x_axis='time', ax=ax)
         intervals = list()
         for interval, label in zip(zip(bound_times, bound_times[1:]), bound_segs):
             ax.add_patch(patches.Rectangle((interval[0], freqs[0]), interval[1] - interval[0], freqs[-1],

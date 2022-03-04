@@ -10,8 +10,7 @@ def beat_tracking(audio_data, sample_rate, onset_env=None, hop_length=512, start
         onset_env = librosa.onset.onset_strength(y=audio_data, sr=sample_rate, hop_length=hop_length)
     times = librosa.times_like(onset_env, sr=sample_rate)
     tempo, beats = librosa.beat.beat_track(onset_envelope=onset_env, hop_length=hop_length, start_bpm=start_bpm)
-    utils.plot_reg_and_shuff_graphs(onset_env, beats)
-
+    # utils.plot_reg_and_shuff_graphs(onset_env, beats)
     return tempo, times[beats]
 
 

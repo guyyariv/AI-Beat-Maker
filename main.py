@@ -54,12 +54,13 @@ def remix(audio_path):
 
 
 if __name__ == "__main__":
-    track_name = "Gipsy Kings - Trista Pena"
+    track_name = "30_sec_piano"
     audio_path = "samples/{}.wav".format(track_name)
     audio_data, samp_rate = utils.get_wav_data(audio_path)
     audio_data, index = librosa.effects.trim(audio_data)
-    k = 6
-    intervals, bound_segs = NoveltyDetection(audio_data, samp_rate, k).novelty_detection(show=True)
+    k = 5
+    intervals, bound_segs = NoveltyDetection(audio_data, samp_rate, k).novelty_detection()
+
     output = list()
     # res = zip(bound_segs, intervals)
     # res = list(res)
@@ -68,8 +69,12 @@ if __name__ == "__main__":
         try:
             inner_arrangement = random_rearrangement.interval_arrangement(
                 audio_data[np.int32(interval[0] * samp_rate):np.int32(interval[1] * samp_rate)], samp_rate)
+            # time_1, time_2 = np.array([(interval[0] * samp_rate).astype(np.int32), (interval[1] * samp_rate).astype(np.int32)])
+            # tempo, bt_slices = beat_tracking.slice_by_beat_tracking(audio_data[time_1:time_2],
+            #                                                     samp_rate)
+            # inner_arrangement = random_rearrangement.slices_random_arrangement(bt_slices)
         except:
             inner_arrangement = np.array([])
         output.append(inner_arrangement)
     output = random_rearrangement.random_arrangement(output)
-    sf.write('results/new_{}.wav'.format(track_name), output, samp_rate)
+    sf.write('results/new_{}.wav'.format(track_name.replace(' ', '_').lower()), output, samp_rate)
