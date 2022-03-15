@@ -30,7 +30,7 @@ def get_notes():
     """ Get all the notes and chords from the midi files in the ./midi_songs directory """
     notes = []
     ex_set = set()
-    for file in glob.glob("midi_songs/*.midi"):
+    for file in glob.glob("drums_generator/midi_drums/*.midi"):
         num = file.split('\\')[-1].split('_')[0]
         if num in ex_set:
             continue
@@ -53,7 +53,7 @@ def get_notes():
             elif isinstance(element, chord.Chord):
                 notes.append('.'.join(str(n) for n in element.normalOrder))
 
-    with open('data/notes', 'wb') as filepath:
+    with open('drums_generator/data/notes', 'wb') as filepath:
         pickle.dump(notes, filepath)
 
     return notes

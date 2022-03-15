@@ -13,7 +13,7 @@ from keras.layers import Activation
 def generate():
     """ Generate a piano midi file """
     #load the notes used to train the model
-    with open('data/notes', 'rb') as filepath:
+    with open('drums_generator/data/notes', 'rb') as filepath:
         notes = pickle.load(filepath)
 
     # Get all pitch names
