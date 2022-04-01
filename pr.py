@@ -9,7 +9,7 @@ import soundfile as sf
 import random
 import utils
 import os, sys
-from beat_tracking.onset_detection import OnsetDetection
+from algorithms.onset_detection import OnsetDetection
 
 sys.path.append('..')
 

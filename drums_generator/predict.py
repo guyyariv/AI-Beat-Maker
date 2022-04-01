@@ -1,6 +1,5 @@
 import glob
 import pickle
-import numpy
 from keras.layers import BatchNormalization as BatchNorm
 from music21 import converter, instrument, note, chord, stream
 from keras.models import Sequential
@@ -8,17 +7,13 @@ from keras.layers import Dense
 from keras.layers import Dropout
 from keras.layers import LSTM
 from keras.layers import Activation
-from scipy.signal import square, sawtooth
 import numpy as np
-from scipy.io import wavfile
-from keras.utils import np_utils
-from keras.callbacks import ModelCheckpoint
 
 
 def generate():
     """ Generates the midi file """
     #load the notes used to train the model
-    with open('drums_generator/data/notes', 'rb') as filepath:
+    with open('data/notes', 'rb') as filepath:
         notes = pickle.load(filepath)
 
     # Get all pitch names
@@ -50,7 +45,7 @@ def prepare_sequences(notes, pitchnames, n_vocab):
     n_patterns = len(network_input)
 
     # reshape the input into a format compatible with LSTM layers
-    normalized_input = numpy.reshape(network_input, (n_patterns, sequence_length, 1))
+    normalized_input = np.reshape(network_input, (n_patterns, sequence_length, 1))
     # normalize input
     normalized_input = normalized_input / float(n_vocab)
 
@@ -77,7 +72,7 @@ def create_network(network_input, n_vocab):
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    model.load_weights('drums_generator/weights/weights-improvement-481-0.2614-bigger.hdf5')
+    model.load_weights('weights/weights-improvement-481-0.2614-bigger.hdf5')
 
     return model
 
@@ -86,7 +81,7 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
     """ Generate notes from the neural network based on a sequence of notes """
 
     # pick a random sequence from the input as a starting point for the prediction
-    start = numpy.random.randint(0, len(network_input)-1)
+    start = np.random.randint(0, len(network_input)-1)
 
     int_to_note = dict((number, note) for number, note in enumerate(pitchnames))
 
@@ -95,12 +90,12 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
 
     # generate 500 notes
     for note_index in range(100):
-        prediction_input = numpy.reshape(pattern, (1, len(pattern), 1))
+        prediction_input = np.reshape(pattern, (1, len(pattern), 1))
         prediction_input = prediction_input / float(n_vocab)
 
         prediction = model.predict(prediction_input, verbose=0)
 
-        index = numpy.argmax(prediction) # numpy array of predictions
+        index = np.argmax(prediction) # numpy array of predictions
         result = int_to_note[index] # indexing the note with the highest probability
         prediction_output.append(result) # that note is the prediction output
 
@@ -143,14 +138,14 @@ def create_midi(prediction_output):
     # output_notes = [instrument.Percussion()] + output_notes
     midi_stream = stream.Stream(output_notes)
 
-    midi_stream.write('midi', fp='drums_generator/test_output_2.midi')
+    midi_stream.write('midi', fp='test_output_2.midi')
 
-    s = converter.parse('drums_generator/test_output_2.midi')
+    s = converter.parse('test_output_2.midi')
     for el in s.recurse():
         if 'Instrument' in el.classes:
             el.activeSite.replace(el, instrument.SnareDrum())
 
-    s.write('midi', 'drums_generator/test_output_2.midi')
+    s.write('midi', 'test_output_2.midi')
 
 
 if __name__ == '__main__':
