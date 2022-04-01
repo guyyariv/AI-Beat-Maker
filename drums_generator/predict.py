@@ -1,17 +1,22 @@
-""" This module generates notes for a midi file using the
-    trained neural network """
+import glob
 import pickle
 import numpy
-from music21 import instrument, note, stream, chord
+from keras.layers import BatchNormalization as BatchNorm
+from music21 import converter, instrument, note, chord, stream
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
 from keras.layers import LSTM
-from keras.layers import BatchNormalization as BatchNorm
 from keras.layers import Activation
+from scipy.signal import square, sawtooth
+import numpy as np
+from scipy.io import wavfile
+from keras.utils import np_utils
+from keras.callbacks import ModelCheckpoint
+
 
 def generate():
-    """ Generate a piano midi file """
+    """ Generates the midi file """
     #load the notes used to train the model
     with open('drums_generator/data/notes', 'rb') as filepath:
         notes = pickle.load(filepath)
@@ -27,11 +32,13 @@ def generate():
     create_midi(prediction_output)
 
 def prepare_sequences(notes, pitchnames, n_vocab):
+
     """ Prepare the sequences used by the Neural Network """
-    # map between notes and integers and back
+
+    # map back from integers to notes
     note_to_int = dict((note, number) for number, note in enumerate(pitchnames))
 
-    sequence_length = 32
+    sequence_length = 100
     network_input = []
     output = []
     for i in range(0, len(notes) - sequence_length, 1):
@@ -70,13 +77,14 @@ def create_network(network_input, n_vocab):
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    # Load the weights to each node
-    model.load_weights('drums_generator/updated-lofi-hip-hop-weights-improvement-140-0.4476.hdf5')
+    model.load_weights('drums_generator/weights/weights-improvement-481-0.2614-bigger.hdf5')
 
     return model
 
 def generate_notes(model, network_input, pitchnames, n_vocab):
+
     """ Generate notes from the neural network based on a sequence of notes """
+
     # pick a random sequence from the input as a starting point for the prediction
     start = numpy.random.randint(0, len(network_input)-1)
 
@@ -86,15 +94,15 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
     prediction_output = []
 
     # generate 500 notes
-    for note_index in range(200):
+    for note_index in range(100):
         prediction_input = numpy.reshape(pattern, (1, len(pattern), 1))
         prediction_input = prediction_input / float(n_vocab)
 
         prediction = model.predict(prediction_input, verbose=0)
 
-        index = numpy.argmax(prediction)
-        result = int_to_note[index]
-        prediction_output.append(result)
+        index = numpy.argmax(prediction) # numpy array of predictions
+        result = int_to_note[index] # indexing the note with the highest probability
+        prediction_output.append(result) # that note is the prediction output
 
         pattern.append(index)
         pattern = pattern[1:len(pattern)]
@@ -102,8 +110,10 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
     return prediction_output
 
 def create_midi(prediction_output):
-    """ convert the output from the prediction to notes and create a midi file
+
+    """ Converts the output from the prediction to notes and create a midi file
         from the notes """
+
     offset = 0
     output_notes = []
 
@@ -115,7 +125,7 @@ def create_midi(prediction_output):
             notes = []
             for current_note in notes_in_chord:
                 new_note = note.Note(int(current_note))
-                new_note.storedInstrument = instrument.SteelDrum()
+                new_note.storedInstrument = instrument.Percussion()
                 notes.append(new_note)
             new_chord = chord.Chord(notes)
             new_chord.offset = offset
@@ -124,15 +134,24 @@ def create_midi(prediction_output):
         else:
             new_note = note.Note(pattern)
             new_note.offset = offset
-            new_note.storedInstrument = instrument.SteelDrum()
+            new_note.storedInstrument = instrument.Percussion()
             output_notes.append(new_note)
 
         # increase offset each iteration so that notes do not stack
         offset += 0.5
 
+    # output_notes = [instrument.Percussion()] + output_notes
     midi_stream = stream.Stream(output_notes)
 
-    midi_stream.write('midi', fp='drums_generator/drums_results/output.mid')
+    midi_stream.write('midi', fp='drums_generator/test_output_2.midi')
+
+    s = converter.parse('drums_generator/test_output_2.midi')
+    for el in s.recurse():
+        if 'Instrument' in el.classes:
+            el.activeSite.replace(el, instrument.SnareDrum())
+
+    s.write('midi', 'drums_generator/test_output_2.midi')
+
 
 if __name__ == '__main__':
     generate()
