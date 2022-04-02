@@ -26,6 +26,7 @@ def generate():
     prediction_output = generate_notes(model, network_input, pitchnames, n_vocab)
     create_midi(prediction_output)
 
+
 def prepare_sequences(notes, pitchnames, n_vocab):
 
     """ Prepare the sequences used by the Neural Network """
@@ -33,7 +34,7 @@ def prepare_sequences(notes, pitchnames, n_vocab):
     # map back from integers to notes
     note_to_int = dict((note, number) for number, note in enumerate(pitchnames))
 
-    sequence_length = 100
+    sequence_length = 20
     network_input = []
     output = []
     for i in range(0, len(notes) - sequence_length, 1):
@@ -51,30 +52,32 @@ def prepare_sequences(notes, pitchnames, n_vocab):
 
     return (network_input, normalized_input)
 
+
 def create_network(network_input, n_vocab):
     """ create the structure of the neural network """
     model = Sequential()
     model.add(LSTM(
         512,
         input_shape=(network_input.shape[1], network_input.shape[2]),
-        recurrent_dropout=0.3,
+        recurrent_dropout=0.2,
         return_sequences=True
     ))
-    model.add(LSTM(512, return_sequences=True, recurrent_dropout=0.3,))
+    model.add(LSTM(512, return_sequences=True, recurrent_dropout=0.2,))
     model.add(LSTM(512))
     model.add(BatchNorm())
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.2))
     model.add(Dense(256))
     model.add(Activation('relu'))
     model.add(BatchNorm())
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.2))
     model.add(Dense(n_vocab))
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    model.load_weights('weights/weights-improvement-481-0.2614-bigger.hdf5')
+    model.load_weights('weights/weights-improvement-200-0.9459-bigger.hdf5')
 
     return model
+
 
 def generate_notes(model, network_input, pitchnames, n_vocab):
 
@@ -104,6 +107,7 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
 
     return prediction_output
 
+
 def create_midi(prediction_output):
 
     """ Converts the output from the prediction to notes and create a midi file
@@ -120,7 +124,7 @@ def create_midi(prediction_output):
             notes = []
             for current_note in notes_in_chord:
                 new_note = note.Note(int(current_note))
-                new_note.storedInstrument = instrument.Percussion()
+                new_note.storedInstrument = instrument.SnareDrum()
                 notes.append(new_note)
             new_chord = chord.Chord(notes)
             new_chord.offset = offset
@@ -129,7 +133,7 @@ def create_midi(prediction_output):
         else:
             new_note = note.Note(pattern)
             new_note.offset = offset
-            new_note.storedInstrument = instrument.Percussion()
+            new_note.storedInstrument = instrument.SnareDrum()
             output_notes.append(new_note)
 
         # increase offset each iteration so that notes do not stack

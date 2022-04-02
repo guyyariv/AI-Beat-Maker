@@ -29,10 +29,13 @@ def train_network():
 
 
 def get_notes():
-    """ Get all the notes and chords from the midi files in the ./midi_songs directory """
+
+    """ Extracts all notes and chords from midi files in the ./midi_songs
+    directory and creates a file with all notes in string format"""
+
     notes = []
 
-    for file in glob.glob("midi_drums/*.midi"):
+    for file in glob.glob("midi_drums/*.mid"):
         midi = converter.parse(file)
 
         print("Parsing %s" % file)
@@ -41,6 +44,7 @@ def get_notes():
 
         try: # file has instrument parts
             s2 = instrument.partitionByInstrument(midi)
+            print(f'{len(s2) > 1}')
             notes_to_parse = s2.parts[0].recurse()
         except: # file has notes in a flat structure
             notes_to_parse = midi.flat.notes
@@ -91,30 +95,32 @@ def prepare_sequences(notes, n_vocab):
 
     return (network_input, network_output)
 
+
 def create_network(network_input, n_vocab):
     """ create the structure of the neural network """
     model = Sequential()
     model.add(LSTM(
         512,
         input_shape=(network_input.shape[1], network_input.shape[2]),
-        recurrent_dropout=0.3,
+        recurrent_dropout=0.2,
         return_sequences=True
     ))
-    model.add(LSTM(512, return_sequences=True, recurrent_dropout=0.3,))
+    model.add(LSTM(512, return_sequences=True, recurrent_dropout=0.2,))
     model.add(LSTM(512))
     model.add(BatchNorm())
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.2))
     model.add(Dense(256))
     model.add(Activation('relu'))
     model.add(BatchNorm())
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.2))
     model.add(Dense(n_vocab))
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    model.load_weights('weights/weights-improvement-117-0.4999-bigger.hdf5')
+    model.load_weights('weights/weights-improvement-02-3.5198-bigger.hdf5')
 
     return model
+
 
 def train(model, network_input, network_output):
 
@@ -131,7 +137,8 @@ def train(model, network_input, network_output):
     callbacks_list = [checkpoint]
 
     # experiment with different epoch sizes and batch sizes
-    model.fit(network_input, network_output, epochs=500, batch_size=64, callbacks=callbacks_list)
+    model.fit(network_input, network_output, epochs=200, batch_size=128, callbacks=callbacks_list)
+
 
 if __name__ == '__main__':
     train_network()
