@@ -44,7 +44,6 @@ def prepare_sequences(notes, pitchnames, n_vocab):
         output.append(note_to_int[sequence_out])
 
     n_patterns = len(network_input)
-
     # reshape the input into a format compatible with LSTM layers
     normalized_input = np.reshape(network_input, (n_patterns, sequence_length, 1))
     # normalize input
