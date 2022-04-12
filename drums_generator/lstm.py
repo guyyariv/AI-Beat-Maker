@@ -1,7 +1,6 @@
 import glob
 import pickle
 from keras.layers import BatchNormalization as BatchNorm
-from music21 import converter, instrument, note, chord, stream
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import Dropout
@@ -9,6 +8,7 @@ from keras.layers import LSTM
 from keras.layers import Activation
 from keras.utils import np_utils
 from keras.callbacks import ModelCheckpoint
+from mido import MidiFile
 import numpy as np
 
 
@@ -17,6 +17,9 @@ def train_network():
     """ This function calls all other functions and trains the LSTM"""
 
     notes = get_notes()
+
+    # with open('data/notes', 'rb') as filepath:
+    #     notes = pickle.load(filepath)
 
     # get amount of pitch names
     n_vocab = len(set(notes))
@@ -29,35 +32,24 @@ def train_network():
 
 
 def get_notes():
-
-    """ Extracts all notes and chords from midi files in the ./midi_songs
-    directory and creates a file with all notes in string format"""
-
     notes = []
 
-    for file in glob.glob("midi_drums/*.mid"):
-        midi = converter.parse(file)
+    for file in glob.glob("midi_drums/*.midi"):
+        input_midi = MidiFile(file)
 
-        print("Parsing %s" % file)
-
-        notes_to_parse = None
-
-        try: # file has instrument parts
-            s2 = instrument.partitionByInstrument(midi)
-            print(f'{len(s2) > 1}')
-            notes_to_parse = s2.parts[0].recurse()
-        except: # file has notes in a flat structure
-            notes_to_parse = midi.flat.notes
-
-        for element in notes_to_parse:
-            if isinstance(element, note.Note):
-                notes.append(str(element.pitch))
-            elif isinstance(element, chord.Chord):
-                notes.append('.'.join(str(n) for n in element.normalOrder))
-
+        for t in input_midi.tracks[-1]:
+            # if 'track' in t.type:
+            #     notes.append(t.type)
+            if t.type == 'program_change':
+                notes.append(f'{t.type},{t.program},{t.time}')
+            elif t.type == 'control_change':
+                notes.append(f'{t.type},{t.value},{t.time}')
+            elif t.type == 'note_on' or t.type == 'note_off':
+                notes.append(f'{t.type},{t.note},{t.time},{t.velocity}')
+            else:
+                continue
     with open('data/notes', 'wb') as filepath:
         pickle.dump(notes, filepath)
-
     return notes
 
 
@@ -66,7 +58,7 @@ def prepare_sequences(notes, n_vocab):
     """ Prepare the sequences which are the inputs for the LSTM """
 
     # sequence length should be changed after experimenting with different numbers
-    sequence_length = 5
+    sequence_length = 30
 
     # get all pitch names
     pitchnames = sorted(set(item for item in notes))
@@ -117,7 +109,7 @@ def create_network(network_input, n_vocab):
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    model.load_weights('weights/weights-improvement-02-3.5198-bigger.hdf5')
+    model.load_weights('weights/weights-improvement-10-1.2986-bigger.hdf5')
 
     return model
 
@@ -137,7 +129,7 @@ def train(model, network_input, network_output):
     callbacks_list = [checkpoint]
 
     # experiment with different epoch sizes and batch sizes
-    model.fit(network_input, network_output, epochs=200, batch_size=128, callbacks=callbacks_list)
+    model.fit(network_input, network_output, epochs=20, batch_size=512, callbacks=callbacks_list)
 
 
 if __name__ == '__main__':

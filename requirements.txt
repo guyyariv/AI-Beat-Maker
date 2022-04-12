@@ -1,3 +1,4 @@
+mido
 absl-py==1.0.0
 appdirs==1.4.4
 astunparse==1.6.3
@@ -31,7 +32,6 @@ llvmlite==0.38.0
 Markdown==3.3.6
 matplotlib==3.5.1
 more-itertools==8.12.0
-music21==7.3.1
 numba==0.55.1
 numpy==1.21.5
 oauthlib==3.2.0
