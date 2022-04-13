@@ -109,7 +109,7 @@ def create_network(network_input, n_vocab):
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    model.load_weights('weights/weights-improvement-10-1.2986-bigger.hdf5')
+    model.load_weights('weights/weights-improvement-03-3.8227-bigger.hdf5')
 
     return model
 
@@ -129,7 +129,7 @@ def train(model, network_input, network_output):
     callbacks_list = [checkpoint]
 
     # experiment with different epoch sizes and batch sizes
-    model.fit(network_input, network_output, epochs=20, batch_size=512, callbacks=callbacks_list)
+    model.fit(network_input, network_output, epochs=20, batch_size=256, callbacks=callbacks_list)
 
 
 if __name__ == '__main__':

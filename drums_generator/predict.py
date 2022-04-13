@@ -73,7 +73,7 @@ def create_network(network_input, n_vocab):
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    model.load_weights('weights/weights-improvement-10-1.2986-bigger.hdf5')
+    model.load_weights('weights/weights-improvement-98-0.4508-bigger.hdf5')
 
     return model
 
@@ -122,7 +122,7 @@ def create_midi(prediction_output):
         else:
             track.append(Message(patterns[0], channel=9, note=int(patterns[1]), time=int(patterns[2]), velocity=int(patterns[3])))
 
-    mid.save('new_song.midi')
+    mid.save('new_song.mid')
 
 
 if __name__ == '__main__':
