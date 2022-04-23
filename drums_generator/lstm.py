@@ -18,7 +18,7 @@ def train_network():
 
     notes = get_notes()
 
-    # with open('data/notes', 'rb') as filepath:
+    # with open('data/notes_trap', 'rb') as filepath:
     #     notes = pickle.load(filepath)
 
     # get amount of pitch names
@@ -37,18 +37,20 @@ def get_notes():
     for file in glob.glob("midi_drums/*.midi"):
         input_midi = MidiFile(file)
 
-        for t in input_midi.tracks[-1]:
-            # if 'track' in t.type:
-            #     notes.append(t.type)
-            if t.type == 'program_change':
-                notes.append(f'{t.type},{t.program},{t.time}')
-            elif t.type == 'control_change':
-                notes.append(f'{t.type},{t.value},{t.time}')
-            elif t.type == 'note_on' or t.type == 'note_off':
-                notes.append(f'{t.type},{t.note},{t.time},{t.velocity}')
-            else:
-                continue
-    with open('data/notes', 'wb') as filepath:
+        for t in input_midi.tracks:
+            for m in t:
+                if not m.is_meta and m.type != 'sysex' and m.channel == 9:
+                    # if 'track' in t.type:
+                    #     notes.append(t.type)
+                    if m.type == 'program_change':
+                        notes.append(f'{m.type},{m.program},{m.time}')
+                    elif m.type == 'control_change':
+                        notes.append(f'{m.type},{m.value},{m.time}')
+                    elif m.type == 'note_on' or m.type == 'note_off':
+                        notes.append(f'{m.type},{m.note},{m.time},{m.velocity}')
+                    else:
+                        continue
+    with open('data/notes_trap', 'wb') as filepath:
         pickle.dump(notes, filepath)
     return notes
 
@@ -92,24 +94,24 @@ def create_network(network_input, n_vocab):
     """ create the structure of the neural network """
     model = Sequential()
     model.add(LSTM(
-        512,
+        1024,
         input_shape=(network_input.shape[1], network_input.shape[2]),
-        recurrent_dropout=0.2,
+        recurrent_dropout=0.3,
         return_sequences=True
     ))
-    model.add(LSTM(512, return_sequences=True, recurrent_dropout=0.2,))
-    model.add(LSTM(512))
+    model.add(LSTM(1024, return_sequences=True, recurrent_dropout=0.3,))
+    model.add(LSTM(1024))
     model.add(BatchNorm())
-    model.add(Dropout(0.2))
-    model.add(Dense(256))
+    model.add(Dropout(0.3))
+    model.add(Dense(512))
     model.add(Activation('relu'))
     model.add(BatchNorm())
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
     model.add(Dense(n_vocab))
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    model.load_weights('weights/weights-improvement-03-3.8227-bigger.hdf5')
+    model.load_weights('weights/weights-improvement-60-0.3887-bigger.hdf5')
 
     return model
 
@@ -129,7 +131,7 @@ def train(model, network_input, network_output):
     callbacks_list = [checkpoint]
 
     # experiment with different epoch sizes and batch sizes
-    model.fit(network_input, network_output, epochs=20, batch_size=256, callbacks=callbacks_list)
+    model.fit(network_input, network_output, epochs=40, batch_size=512, callbacks=callbacks_list)
 
 
 if __name__ == '__main__':

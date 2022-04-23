@@ -2,11 +2,12 @@ import random
 import matplotlib.pyplot as plt
 import librosa
 import numpy as np
+from mido import MidiFile, MetaMessage, bpm2tempo, MidiTrack
 import utils
 from algorithms import beat_tracking, novelty_detection
 from algorithms.novelty_detection import NoveltyDetection
 import soundfile as sf
-
+from drums_generator import predict
 
 def slices_random_arrangement(sliced_audio, total_time_sec=None):
     """
@@ -67,41 +68,6 @@ def interval_arrangement(slice, sr, frame_length=2, show=False):
     return librosa.effects.remix(slice, inner_intervals[::-1], align_zeros=False)
 
 
-def all_process(track_name, audio_path):
-    audio_data, samp_rate = utils.get_wav_data(audio_path)
-    audio_data, index = librosa.effects.trim(audio_data)
-    audio_total_time = librosa.get_duration(audio_data)
-    novelty_slices = novelty_detection.slice_by_novelty_detection(audio_data, samp_rate, audio_total_time)
-    slices = list()
-    estimated_bpm = [120]
-    for slice in novelty_slices:
-        time_1, time_2 = (slice * samp_rate).astype(np.int32)
-        tempo, bt_slices = beat_tracking.slice_by_beat_tracking(audio_data[time_1:time_2],
-                                                                samp_rate, start_bpm=estimated_bpm[-1])
-        slices_ran = slices_random_arrangement(bt_slices,
-                                                                    total_time_sec=audio_total_time/len(novelty_slices))
-        slices.append(slices_ran)
-        estimated_bpm.append(tempo)
-
-    rearanged_slices = random_arrangement(slices)
-    print(estimated_bpm)
-    estimated_bpm = np.argmax(np.bincount(estimated_bpm))
-    print(estimated_bpm)
-    tempo_estimated, peaks = beat_tracking.beat_tracking(rearanged_slices, samp_rate, start_bpm=estimated_bpm)
-    inner_peaks = beat_tracking.plp(rearanged_slices, samp_rate)
-    peaks_frame = peaks
-    print("peaks_times = ", peaks_frame)
-    print("all_peaks_from_beat_tracking = ", peaks)
-    print("inner_peaks_times = ", inner_peaks)
-
-    utils.add_clicks_and_save(rearanged_slices, samp_rate, peaks_frame, inner_peaks,
-                              "{}".format(track_name), clicks=False)
-    utils.add_clicks_and_save(rearanged_slices, samp_rate, peaks_frame, inner_peaks,
-                              "clicks_{}".format(track_name), clicks=True)
-
-    return rearanged_slices, peaks_frame, peaks, inner_peaks
-
-
 def remix(audio_path):
     audio_data, samp_rate = utils.get_wav_data(audio_path)
     audio_data, index = librosa.effects.trim(audio_data)
@@ -113,11 +79,11 @@ def remix(audio_path):
 
 
 if __name__ == "__main__":
-    track_name = "30_sec_test"
+    track_name = "drumless"
     audio_path = "samples/{}.wav".format(track_name)
     audio_data, samp_rate = utils.get_wav_data(audio_path)
     audio_data, index = librosa.effects.trim(audio_data)
-    k = 5
+    k = 16
     intervals, bound_segs = NoveltyDetection(audio_data, samp_rate, k).novelty_detection()
 
     output = list()
@@ -126,14 +92,29 @@ if __name__ == "__main__":
     # res = sorted(res, key=lambda x: x[0])
     for interval in intervals:
         try:
-            inner_arrangement = interval_arrangement(
-                audio_data[np.int32(interval[0] * samp_rate):np.int32(interval[1] * samp_rate)], samp_rate)
-            # time_1, time_2 = np.array([(interval[0] * samp_rate).astype(np.int32), (interval[1] * samp_rate).astype(np.int32)])
-            # tempo, bt_slices = algorithms.slice_by_beat_tracking(audio_data[time_1:time_2],
-            #                                                     samp_rate)
-            # inner_arrangement = slices_random_arrangement(bt_slices)
+            # inner_arrangement = interval_arrangement(
+            #     audio_data[np.int32(interval[0] * samp_rate):np.int32(interval[1] * samp_rate)], samp_rate)
+            time_1, time_2 = np.array([(interval[0] * samp_rate).astype(np.int32), (interval[1] * samp_rate).astype(np.int32)])
+            tempo, bt_slices = beat_tracking.slice_by_beat_tracking(audio_data[time_1:time_2],
+                                                                    samp_rate)
+            inner_arrangement = slices_random_arrangement(bt_slices)
         except:
             inner_arrangement = np.array([])
         output.append(inner_arrangement)
     output = random_arrangement(output)
-    sf.write('results/new_{}.wav'.format(track_name.replace(' ', '_').lower()), output, samp_rate)
+    tempo, beats = librosa.beat.beat_track(y=output, sr=samp_rate)
+
+    # predict.generate(tempo=tempo, length=2000)
+
+    s1_wav_data = output
+    s2_wav_data, _ = utils.get_wav_data('drums_generator/new_drums.wav')
+    s2_wav_data = librosa.effects.trim(s2_wav_data)[0] * 6
+
+    s1_wav_len = s1_wav_data.shape[0]
+    s2_wav_len = s2_wav_data.shape[0]
+    min_length = min(s1_wav_len, s2_wav_len)
+
+    s3_wav_data = s1_wav_data[:min_length] + s2_wav_data[:min_length]
+
+    sf.write(f'results/new_{track_name.replace(" ", "_").lower()}.wav', s3_wav_data, samp_rate)
+

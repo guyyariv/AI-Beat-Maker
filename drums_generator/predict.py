@@ -1,6 +1,6 @@
 import glob
 import pickle
-from mido import Message, MidiFile, MidiTrack
+from mido import Message, MidiFile, MidiTrack, MetaMessage, bpm2tempo
 from keras.layers import BatchNormalization as BatchNorm
 from keras.models import Sequential
 from keras.layers import Dense
@@ -10,10 +10,10 @@ from keras.layers import Activation
 import numpy as np
 
 
-def generate():
+def generate(tempo=120, length=2000):
     """ Generates the midi file """
     #load the notes used to train the model
-    with open('data/notes', 'rb') as filepath:
+    with open('data/notes_trap', 'rb') as filepath:
         notes = pickle.load(filepath)
 
     # Get all pitch names
@@ -56,24 +56,24 @@ def create_network(network_input, n_vocab):
     """ create the structure of the neural network """
     model = Sequential()
     model.add(LSTM(
-        512,
+        1024,
         input_shape=(network_input.shape[1], network_input.shape[2]),
-        recurrent_dropout=0.2,
+        recurrent_dropout=0.3,
         return_sequences=True
     ))
-    model.add(LSTM(512, return_sequences=True, recurrent_dropout=0.2,))
-    model.add(LSTM(512))
+    model.add(LSTM(1024, return_sequences=True, recurrent_dropout=0.3,))
+    model.add(LSTM(1024))
     model.add(BatchNorm())
-    model.add(Dropout(0.2))
-    model.add(Dense(256))
+    model.add(Dropout(0.3))
+    model.add(Dense(512))
     model.add(Activation('relu'))
     model.add(BatchNorm())
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
     model.add(Dense(n_vocab))
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    model.load_weights('weights/weights-improvement-98-0.4508-bigger.hdf5')
+    model.load_weights('weights/weights-improvement-17-0.2038-bigger.hdf5')
 
     return model
 
@@ -107,10 +107,13 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
     return prediction_output
 
 
-def create_midi(prediction_output):
+def create_midi(prediction_output, tempo):
     mid = MidiFile()
     track = MidiTrack()
+    track_meta = MidiTrack()
+    mid.tracks.append(track_meta)
     mid.tracks.append(track)
+    track_meta.append(MetaMessage('set_tempo', tempo=bpm2tempo(tempo)))
     track.append(Message('program_change', channel=9, program=12, time=0))
 
     for pattern in prediction_output:
@@ -122,7 +125,7 @@ def create_midi(prediction_output):
         else:
             track.append(Message(patterns[0], channel=9, note=int(patterns[1]), time=int(patterns[2]), velocity=int(patterns[3])))
 
-    mid.save('new_song.mid')
+    mid.save('new_drums.mid')
 
 
 if __name__ == '__main__':
