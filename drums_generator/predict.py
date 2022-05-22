@@ -10,6 +10,13 @@ from keras.layers import Activation
 import numpy as np
 
 
+import tensorflow as tf
+device_name = tf.test.gpu_device_name()
+if device_name != '/device:GPU:0':
+  raise SystemError('GPU device not found')
+print('Found GPU at: {}'.format(device_name))
+
+
 def generate(tempo=120, length=2000):
     """ Generates the midi file """
     #load the notes used to train the model
@@ -23,8 +30,9 @@ def generate(tempo=120, length=2000):
 
     network_input, normalized_input = prepare_sequences(notes, pitchnames, n_vocab)
     model = create_network(normalized_input, n_vocab)
-    prediction_output = generate_notes(model, network_input, pitchnames, n_vocab)
-    create_midi(prediction_output)
+    prediction_output = generate_notes(model, network_input, pitchnames,
+                                       n_vocab, length)
+    create_midi(prediction_output, tempo)
 
 
 def prepare_sequences(notes, pitchnames, n_vocab):
@@ -78,7 +86,7 @@ def create_network(network_input, n_vocab):
     return model
 
 
-def generate_notes(model, network_input, pitchnames, n_vocab):
+def generate_notes(model, network_input, pitchnames, n_vocab, length=1200):
 
     """ Generate notes from the neural network based on a sequence of notes """
 
@@ -90,8 +98,7 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
     pattern = network_input[start]
     prediction_output = []
 
-    # generate 500 notes
-    for note_index in range(500):
+    for note_index in range(length):
         prediction_input = np.reshape(pattern, (1, len(pattern), 1))
         prediction_input = prediction_input / float(n_vocab)
 

@@ -9,6 +9,7 @@ from algorithms.novelty_detection import NoveltyDetection
 import soundfile as sf
 from drums_generator import predict
 
+
 def slices_random_arrangement(sliced_audio, total_time_sec=None):
     """
     This function will arrange the sliced sections randomly.
