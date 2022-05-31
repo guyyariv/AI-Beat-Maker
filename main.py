@@ -2,12 +2,10 @@ import random
 import matplotlib.pyplot as plt
 import librosa
 import numpy as np
-from mido import MidiFile, MetaMessage, bpm2tempo, MidiTrack
 import utils
 from algorithms import beat_tracking, novelty_detection
 from algorithms.novelty_detection import NoveltyDetection
 import soundfile as sf
-from drums_generator import predict
 
 
 def slices_random_arrangement(sliced_audio, total_time_sec=None):
@@ -84,7 +82,7 @@ if __name__ == "__main__":
     audio_path = "samples/{}.wav".format(track_name)
     audio_data, samp_rate = utils.get_wav_data(audio_path)
     audio_data, index = librosa.effects.trim(audio_data)
-    k = 16
+    k = 4
     intervals, bound_segs = NoveltyDetection(audio_data, samp_rate, k).novelty_detection()
 
     output = list()
@@ -108,8 +106,8 @@ if __name__ == "__main__":
     # predict.generate(tempo=tempo, length=2000)
 
     s1_wav_data = output
-    s2_wav_data, _ = utils.get_wav_data('drums_generator/new_drums.wav')
-    s2_wav_data = librosa.effects.trim(s2_wav_data)[0] * 6
+    s2_wav_data, _ = utils.get_wav_data('output2.wav')
+    s2_wav_data = librosa.effects.trim(s2_wav_data)[0] * 8
 
     s1_wav_len = s1_wav_data.shape[0]
     s2_wav_len = s2_wav_data.shape[0]
@@ -117,5 +115,5 @@ if __name__ == "__main__":
 
     s3_wav_data = s1_wav_data[:min_length] + s2_wav_data[:min_length]
 
-    sf.write(f'results/new_{track_name.replace(" ", "_").lower()}.wav', s3_wav_data, samp_rate)
+    sf.write(f'results/_new_{track_name.replace(" ", "_").lower()}.wav', s3_wav_data, samp_rate)
 
