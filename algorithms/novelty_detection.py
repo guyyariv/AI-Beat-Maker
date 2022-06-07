@@ -179,5 +179,6 @@ class NoveltyDetection:
             ax.add_patch(patches.Rectangle((interval[0], freqs[0]), interval[1] - interval[0], freqs[-1],
                                            facecolor=self.colors(label), alpha=0.50))
             intervals.append(interval)
-        plt.show()
+        if show:
+            plt.show()
         return intervals, bound_segs

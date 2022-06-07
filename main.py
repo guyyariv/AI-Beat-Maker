@@ -1,45 +1,12 @@
-import random
 import matplotlib.pyplot as plt
 import librosa
 import numpy as np
 import utils
-from algorithms import beat_tracking, novelty_detection
+from algorithms import beat_tracking
+from algorithms.chord_recognition import rearrange_by_chord_recognition
 from algorithms.novelty_detection import NoveltyDetection
 import soundfile as sf
 
-
-def slices_random_arrangement(sliced_audio, total_time_sec=None):
-    """
-    This function will arrange the sliced sections randomly.
-    """
-    rearranged = np.array([])
-    if not sliced_audio:
-        return sliced_audio
-    # for i in range(initial_slices_num):
-    #     rearranged = np.append(rearranged, sliced_audio[i])
-
-    # shuffle slices
-    random.shuffle(sliced_audio)
-
-    # repeat and remix
-    rnd_int = np.random.randint(1, 2, size=max(round(3 * len(sliced_audio) / 4), 1))
-    for slice, rnd in zip(sliced_audio, rnd_int):
-        # repeat = np.tile(slice, rnd)
-        rearranged = np.append(rearranged, slice)
-    return rearranged
-
-
-def random_arrangement(slices):
-    """
-    :param slices: list of np.arrays
-    :return: 1-d np.array
-    """
-    random.shuffle(slices)
-    rearranged = np.array([])
-    for slice in slices:
-        rearranged = np.append(rearranged, slice)
-        # rearranged = np.append(rearranged, np.random.choice(slices))
-    return rearranged
 
 
 def interval_arrangement(slice, sr, frame_length=2, show=False):
@@ -77,37 +44,42 @@ def remix(audio_path):
     return tempo, y_out, samp_rate
 
 
-if __name__ == "__main__":
-    track_name = "drumless"
+def mae_calculator(y_true, predictions):
+    y_true, predictions = np.array(y_true), np.array(predictions)
+    return np.mean(np.abs(y_true - predictions))
+
+
+def beat_maker(track_name):
+
     audio_path = "samples/{}.wav".format(track_name)
     audio_data, samp_rate = utils.get_wav_data(audio_path)
     audio_data, index = librosa.effects.trim(audio_data)
-    k = 4
+    k = 2
     intervals, bound_segs = NoveltyDetection(audio_data, samp_rate, k).novelty_detection()
 
     output = list()
-    # res = zip(bound_segs, intervals)
-    # res = list(res)
-    # res = sorted(res, key=lambda x: x[0])
     for interval in intervals:
         try:
-            # inner_arrangement = interval_arrangement(
-            #     audio_data[np.int32(interval[0] * samp_rate):np.int32(interval[1] * samp_rate)], samp_rate)
             time_1, time_2 = np.array([(interval[0] * samp_rate).astype(np.int32), (interval[1] * samp_rate).astype(np.int32)])
             tempo, bt_slices = beat_tracking.slice_by_beat_tracking(audio_data[time_1:time_2],
                                                                     samp_rate)
-            inner_arrangement = slices_random_arrangement(bt_slices)
+            inner_arrangement = rearrange_by_chord_recognition(bt_slices, samp_rate)
         except:
-            inner_arrangement = np.array([])
+            continue
         output.append(inner_arrangement)
-    output = random_arrangement(output)
+    output = rearrange_by_chord_recognition(output, samp_rate)
     tempo, beats = librosa.beat.beat_track(y=output, sr=samp_rate)
-
+    print(tempo)
+    #
     # predict.generate(tempo=tempo, length=2000)
+    #
 
-    s1_wav_data = output
-    s2_wav_data, _ = utils.get_wav_data('output2.wav')
-    s2_wav_data = librosa.effects.trim(s2_wav_data)[0] * 8
+    s2_wav_data, _ = utils.get_wav_data('drums_results/drums.wav')
+    s2_wav_data = librosa.effects.trim(librosa.util.normalize(s2_wav_data))[0] * 2
+
+    s1_wav_data = librosa.util.normalize(output)
+
+    tempo_2, beats_2 = librosa.beat.beat_track(y=s2_wav_data, sr=samp_rate)
 
     s1_wav_len = s1_wav_data.shape[0]
     s2_wav_len = s2_wav_data.shape[0]
@@ -115,5 +87,29 @@ if __name__ == "__main__":
 
     s3_wav_data = s1_wav_data[:min_length] + s2_wav_data[:min_length]
 
-    sf.write(f'results/_new_{track_name.replace(" ", "_").lower()}.wav', s3_wav_data, samp_rate)
+    length = min(len(beats), len(beats_2))
 
+    return mae_calculator(beats[:length], beats_2[:length]), s3_wav_data, samp_rate
+    # return 2, output, samp_rate
+
+
+if __name__ == "__main__":
+
+    track_name = "drumless"
+    mae, s3_wav_data, samp_rate = beat_maker(track_name)
+    print(mae, 0)
+
+    min_mae = mae
+    final_res = s3_wav_data
+    idx = 0
+
+    while mae > 30 and idx < 5:
+
+        idx += 1
+        mae, s3_wav_data, samp_rate = beat_maker(track_name)
+        if mae < min_mae:
+            min_mae = mae
+            final_res = s3_wav_data
+        print(mae, idx)
+
+    sf.write(f'results/full_process_{track_name.replace(" ", "_").lower()}.wav', final_res, samp_rate)
