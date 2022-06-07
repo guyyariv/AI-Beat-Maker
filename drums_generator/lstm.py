@@ -34,12 +34,12 @@ def train_network():
 def get_notes():
     notes = []
 
-    for file in glob.glob("midi_drums/*.midi"):
+    for file in glob.glob("midi_drums/*"):
         input_midi = MidiFile(file)
 
         for t in input_midi.tracks:
             for m in t:
-                if not m.is_meta and m.type != 'sysex' and m.channel == 9:
+                if (not m.is_meta and m.type != 'sysex' and m.channel == 9) or (not m.is_meta and m.type != 'sysex' and file.endswith('mid')):
                     # if 'track' in t.type:
                     #     notes.append(t.type)
                     if m.type == 'program_change':
@@ -50,7 +50,7 @@ def get_notes():
                         notes.append(f'{m.type},{m.note},{m.time},{m.velocity}')
                     else:
                         continue
-    with open('data/notes_trap', 'wb') as filepath:
+    with open('data/full_notes', 'wb') as filepath:
         pickle.dump(notes, filepath)
     return notes
 
