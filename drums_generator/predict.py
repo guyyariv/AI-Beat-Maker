@@ -1,4 +1,3 @@
-import glob
 import pickle
 from mido import Message, MidiFile, MidiTrack, MetaMessage, bpm2tempo
 from keras.layers import BatchNormalization as BatchNorm
@@ -32,7 +31,7 @@ def generate(tempo=120, length=2000):
     model = create_network(normalized_input, n_vocab)
     prediction_output = generate_notes(model, network_input, pitchnames,
                                        n_vocab, length)
-    create_midi(prediction_output, tempo)
+    return create_midi(prediction_output, tempo)
 
 
 def prepare_sequences(notes, pitchnames, n_vocab):
@@ -132,7 +131,7 @@ def create_midi(prediction_output, tempo):
         else:
             track.append(Message(patterns[0], channel=9, note=int(patterns[1]), time=int(patterns[2]), velocity=int(patterns[3])))
 
-    mid.save('new_drums.mid')
+    return mid
 
 
 if __name__ == '__main__':
