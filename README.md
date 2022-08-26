@@ -1,12 +1,4 @@
 # AI-Beat-Maker
-Final Project - 2022 - 
-Guy Yariv, Tal Herman
-
-April 2022 - Current status presentation - https://docs.google.com/presentation/d/1_3BIMUGXDm-3_c1an3XoG1GO2rVwFXSPEKa9Hi9JFbY/edit#slide=id.p1
-
-January 2022 - MVP presentation: https://drive.google.com/file/d/1JfIOwruiSnZc99hsY7ajaZd46w_U4hps/view?usp=sharing
-
-https://docs.google.com/presentation/d/1a2NpFeHoDHmqDTGrgYMqOPMRc8rGdMwonmm0CqXkicc/edit?usp=sharing
 
 Description:
 Using machine learning and DSP to automatically generate remixes\ beats out of given
@@ -16,10 +8,14 @@ different “chops” and rearranging it while adding drums - a common technique
 hip hop production. This might also be extended to remixing entire songs.
 
 
-Challenges:
+## Running Instructions
 
-● Collecting data: probably best making a beat-making app, but possibly collecting
-DAW projects
+1. Clone this repo
+2. Install requirements
+```angular2html
+pip install requirments
+```
+3. Add the sample you want to create beat out of him into 'samples' directory
 
-● Adapting current SOTA models (see Magenta etc.) to the tasks of rearranging
-chops\ adding drums.
+pass
+
