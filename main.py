@@ -83,10 +83,8 @@ def beat_maker(track_name, drums, bass, k):
 @click.option('--bass', help='apply bass', type=bool, default=False)
 @click.option('--k', help='k clusters', type=int, default=2)
 def main(track, drums, bass, k):
-    s3_wav_data, samp_rate = beat_maker(track, drums, bass, k)
-    final_res = s3_wav_data
-
-    sf.write(f'remixes/{track}.wav', final_res, samp_rate)
+    final_res, samp_rate = beat_maker(track, drums, bass, k)
+    sf.write(f'results/{track}.wav', final_res, samp_rate)
 
 
 if __name__ == "__main__":
