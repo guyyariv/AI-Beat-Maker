@@ -1,8 +1,6 @@
 import librosa
 from mido import Message, MidiFile, MidiTrack, MetaMessage, bpm2tempo
 
-from methods.midi2wav import convert_midi_to_wav
-
 
 def generate_bass(chords, tempo, times):
     """
