@@ -1,13 +1,13 @@
 import glob
 import pickle
-# from keras.layers import BatchNormalization as BatchNorm
-# from keras.models import Sequential
-# from keras.layers import Dense
-# from keras.layers import Dropout
-# from keras.layers import LSTM
-# from keras.layers import Activation
-# from keras.utils import np_utils
-# from keras.callbacks import ModelCheckpoint
+from keras.layers import BatchNormalization as BatchNorm
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Dropout
+from keras.layers import LSTM
+from keras.layers import Activation
+from keras.utils import np_utils
+from keras.callbacks import ModelCheckpoint
 from mido import MidiFile
 import numpy as np
 
