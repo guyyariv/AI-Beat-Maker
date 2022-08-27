@@ -1,6 +1,6 @@
 # AI-Beat-Maker
 
-Description:
+Description:  
 Creating music has become easier with remix generators and separate drum line creators,
 but there is still no solution for automatically creating the desired combination.
 We use a combination of machine learning and DSP methods in order to automatically generate
