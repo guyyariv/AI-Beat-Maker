@@ -6,7 +6,7 @@ from drums_generator import predict
 from methods import beat_tracking
 from methods.bass_generator import generate_bass
 from methods.chord_recognition import rearrange_by_chord_recognition, chord_rec
-from methods.midi2wav import convert_midi_to_wav
+from drums_generator.midi2wav import convert_midi_to_wav
 from methods.novelty_detection import NoveltyDetection
 import soundfile as sf
 

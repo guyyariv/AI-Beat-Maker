@@ -14,5 +14,5 @@ ctypes.util.find_library = proxy_find_library
 
 
 def convert_midi_to_wav(midi_path, output_path, sound_font=None):
-    fs = FluidSynth(sound_font='/content/808.sf2') if sound_font else FluidSynth()
+    fs = FluidSynth(sound_font='808.sf2') if sound_font else FluidSynth()
     fs.midi_to_audio(midi_path, output_path)
