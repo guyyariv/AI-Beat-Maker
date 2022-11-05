@@ -19,7 +19,7 @@ print('Found GPU at: {}'.format(device_name))
 def generate(tempo=120, length=2000):
     """ Generates the midi file """
     #load the notes used to train the model
-    with open('data/notes_trap', 'rb') as filepath:
+    with open('data/notes', 'rb') as filepath:
         notes = pickle.load(filepath)
 
     # Get all pitch names
@@ -63,16 +63,16 @@ def create_network(network_input, n_vocab):
     """ create the structure of the neural network """
     model = Sequential()
     model.add(LSTM(
-        1024,
+        512,
         input_shape=(network_input.shape[1], network_input.shape[2]),
         recurrent_dropout=0.3,
         return_sequences=True
     ))
-    model.add(LSTM(1024, return_sequences=True, recurrent_dropout=0.3,))
-    model.add(LSTM(1024))
+    model.add(LSTM(512, return_sequences=True, recurrent_dropout=0.3,))
+    model.add(LSTM(512))
     model.add(BatchNorm())
     model.add(Dropout(0.3))
-    model.add(Dense(512))
+    model.add(Dense(264))
     model.add(Activation('relu'))
     model.add(BatchNorm())
     model.add(Dropout(0.3))
@@ -80,7 +80,7 @@ def create_network(network_input, n_vocab):
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam')
 
-    model.load_weights('weights/new_weights-improvement-17-0.2038-bigger.hdf5')
+    model.load_weights('weights/weights-improvement-100-0.3411-bigger.hdf5')
 
     return model
 
