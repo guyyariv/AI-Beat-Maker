@@ -13,12 +13,13 @@ beat in the simplest touch of a button, without the need for advanced and compli
 ## Running Instructions
 
 1. Clone this repo
-2. Install requirements
+2. Activate virtual environment
+3. Install requirements
 ```angular2html
 pip install requirements
 ```
-3. Add the sample you wish to remix into the 'samples' directory
-4. Run main.py  
+4. Add the sample you wish to remix into the 'samples' directory
+5. Run main.py  
 Parameters required:  
 --track -> samples title with no extension (must be a wav file)  
 Optional parameters:  
