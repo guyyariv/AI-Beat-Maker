@@ -16,7 +16,7 @@ beat in the simplest touch of a button, without the need for advanced and compli
 2. Activate virtual environment
 3. Install requirements
 ```angular2html
-pip install requirements
+pip install -r requirements.txt
 ```
 4. Add the sample you wish to remix into the 'samples' directory
 5. Run main.py  
